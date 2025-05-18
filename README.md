@@ -1,4 +1,7 @@
 # hfmfp
+
+Per installazione su HuggingFace fai un Fork di questa Repo cambiando il nome ed usa il dockerfile cambiando nomegithub e nomerepo
+
 ## Env Vars
 ```
 API_PASSWORD = Yourpassword
