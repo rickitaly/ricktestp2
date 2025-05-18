@@ -1,38 +1,21 @@
-FROM python:3.13.2-slim
+FROM python:3.10-slim-buster
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE="1"
-ENV PYTHONUNBUFFERED="1"
-ENV PORT="8888"
+# Set the working directory in the container to /app
+WORKDIR /app
 
-# Set work directory
-WORKDIR /mediaflow_proxy
+# Install git
+RUN apt-get update && apt-get install -y git
 
-# Create a non-root user
-RUN useradd -m mediaflow_proxy
-RUN chown -R mediaflow_proxy:mediaflow_proxy /mediaflow_proxy
+# Clone the repository
+RUN git clone https://github.com/nzo66/hfmfp.git .
 
-# Set up the PATH to include the user's local bin
-ENV PATH="/home/mediaflow_proxy/.local/bin:$PATH"
+# Copy the local config.json file to the container
 
-# Switch to non-root user
-USER mediaflow_proxy
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Poetry
-RUN pip install --user --no-cache-dir poetry
 
-# Copy only requirements to cache them in docker layer
-COPY --chown=mediaflow_proxy:mediaflow_proxy pyproject.toml poetry.lock* /mediaflow_proxy/
+EXPOSE 7860
 
-# Project initialization:
-RUN poetry config virtualenvs.in-project true \
-    && poetry install --no-interaction --no-ansi --no-root --only main
-
-# Copy project files
-COPY --chown=mediaflow_proxy:mediaflow_proxy . /mediaflow_proxy
-
-# Expose the port the app runs on
-EXPOSE 8888
-
-# Activate virtual environment and run the application with Gunicorn
-CMD ["poetry", "run", "gunicorn", "mediaflow_proxy.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8888", "--timeout", "120", "--max-requests", "500", "--max-requests-jitter", "200", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info"]
+# Run run.py when the container launches
+CMD ["uvicorn", "run:main_app", "--host", "0.0.0.0", "--port", "7860", "--workers", "4"]
